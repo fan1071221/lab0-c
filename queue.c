@@ -59,13 +59,29 @@ bool q_insert_tail(struct list_head *head, char *s)
 /* Remove an element from head of queue */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head) {
+        return NULL;
+    }
+    element_t *element = list_first_entry(head, element_t, list);
+    if (bufsize) {
+        element->value = strdup(sp);
+    }
+    list_del(&element->list);
+    return element;
 }
 
 /* Remove an element from tail of queue */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head) {
+        return NULL;
+    }
+    element_t *element = list_last_entry(head, element_t, list);
+    if (bufsize) {
+        element->value = strdup(sp);
+    }
+    list_del(&element->list);
+    return element;
 }
 
 /* Return number of elements in queue */
@@ -100,10 +116,32 @@ bool q_delete_dup(struct list_head *head)
 void q_swap(struct list_head *head)
 {
     // https://leetcode.com/problems/swap-nodes-in-pairs/
+    struct list_head *dummyhead = malloc(sizeof(struct list_head));
+    dummyhead->next = head;
+    struct list_head *cur = head;
+    while (cur->next != NULL && cur->next->next != NULL) {
+        struct list_head *temp1 = cur->next;
+        struct list_head *temp2 = cur->next->next;
+        cur->next = cur->next->next;
+        cur->next->next = temp1;
+        temp1->next = temp2;
+        cur = cur->next->next;
+    }
 }
 
 /* Reverse elements in queue */
-void q_reverse(struct list_head *head) {}
+void q_reverse(struct list_head *head)
+{
+    // https://leetcode.com/problems/reverse-linked-list/
+    struct list_head *pre = NULL;
+    struct list_head *cur = head;
+    while (cur != NULL) {
+        struct list_head *temp = cur->next;
+        cur->next = pre;
+        pre = cur;
+        cur = temp;
+    }
+}
 
 /* Reverse the nodes of the list k at a time */
 void q_reverseK(struct list_head *head, int k)
