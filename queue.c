@@ -64,7 +64,8 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     }
     element_t *element = list_first_entry(head, element_t, list);
     if (bufsize) {
-        element->value = strdup(sp);
+        strncpy(sp, element->value, bufsize - 1);
+        sp[bufsize - 1] = '\0';
     }
     list_del(&element->list);
     return element;
@@ -78,7 +79,8 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
     }
     element_t *element = list_last_entry(head, element_t, list);
     if (bufsize) {
-        element->value = strdup(sp);
+        strncpy(sp, element->value, bufsize - 1);
+        sp[bufsize - 1] = '\0';
     }
     list_del(&element->list);
     return element;
@@ -102,6 +104,18 @@ int q_size(struct list_head *head)
 bool q_delete_mid(struct list_head *head)
 {
     // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+
+    if (!head || list_empty(head)) {
+        return false;
+    }
+    struct list_head *slow = head;
+    struct list_head *fast = head;
+    while (fast->next != NULL && fast->next->next != NULL) {
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+    list_del(slow);
+    q_release_element(list_entry(slow, element_t, list));
     return true;
 }
 
@@ -116,16 +130,15 @@ bool q_delete_dup(struct list_head *head)
 void q_swap(struct list_head *head)
 {
     // https://leetcode.com/problems/swap-nodes-in-pairs/
-    struct list_head *dummyhead = malloc(sizeof(struct list_head));
-    dummyhead->next = head;
-    struct list_head *cur = head;
-    while (cur->next != NULL && cur->next->next != NULL) {
-        struct list_head *temp1 = cur->next;
-        struct list_head *temp2 = cur->next->next;
-        cur->next = cur->next->next;
-        cur->next->next = temp1;
-        temp1->next = temp2;
-        cur = cur->next->next;
+    if (!head || list_empty(head)) {
+        return;
+    }
+    struct list_head *cur;
+    list_for_each (cur, head) {
+        if (cur->next == head) {
+            break;
+        }
+        list_move(cur, cur->next);
     }
 }
 
@@ -133,13 +146,15 @@ void q_swap(struct list_head *head)
 void q_reverse(struct list_head *head)
 {
     // https://leetcode.com/problems/reverse-linked-list/
-    struct list_head *pre = NULL;
-    struct list_head *cur = head;
-    while (cur != NULL) {
-        struct list_head *temp = cur->next;
-        cur->next = pre;
-        pre = cur;
-        cur = temp;
+    if (!head || list_empty(head)) {
+        return;
+    }
+    struct list_head *cur = head->prev;
+    struct list_head *node = cur->prev;
+    while (node != head) {
+        list_del(node);
+        list_add(node, head->prev);
+        node = cur->prev;
     }
 }
 
@@ -157,7 +172,18 @@ void q_sort(struct list_head *head) {}
 int q_descend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
+    struct list_head *pre = head->prev;
+    struct list_head *cur = pre->prev;
+    while (cur != NULL) {
+        if (strcmp(list_entry(pre, element_t, list)->value,
+                   list_entry(cur, element_t, list)->value) < 0) {
+            list_del(cur);
+        } else {
+            pre = cur;
+        }
+        cur = cur->next;
+    }
+    return q_size(head);
 }
 
 /* Merge all the queues into one sorted queue, which is in ascending order */
